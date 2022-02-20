@@ -40,7 +40,7 @@ def convert_to_a1_number(number: int) -> bytes:
     else:
         result = number
 
-    return int.to_bytes(result, 8, "big")
+    return int.to_bytes(result, 4, "big")
 
 
 class ArmMovement:
@@ -54,31 +54,13 @@ class ArmMovement:
         self.serial = Serial(usb_device, 9600, 8, 2, STOPBITS_ONE)
 
     def set_x(self, x: int):
-        actual_x = self.get_x()
-        desired_x = convert_to_a1_number(actual_x + x)
-
-        message = bytearray(self.__DISPLACEMENT_X_COMMAND)
-        message += bytearray(desired_x)
-
-        self.serial.write(message)
+        self.__send_new_position(self.__DISPLACEMENT_X_COMMAND, self.get_x(), x)
 
     def set_y(self, y: int):
-        actual_y = self.get_x()
-        desired_y = convert_to_a1_number(actual_y + y)
-
-        message = bytearray(self.__DISPLACEMENT_Y_COMMAND)
-        message += bytearray(desired_y)
-
-        self.serial.write(message)
+        self.__send_new_position(self.__DISPLACEMENT_Y_COMMAND, self.get_y(), y)
 
     def set_z(self, z: int):
-        actual_z = self.get_z()
-        desired_z = convert_to_a1_number(actual_z + z)
-
-        message = bytearray(self.__DISPLACEMENT_Z_COMMAND)
-        message += bytearray(desired_z)
-
-        self.serial.write(message)
+        self.__send_new_position(self.__DISPLACEMENT_Z_COMMAND, self.get_z(), z)
 
     def set_position(self, position: (int, int, int)):
         self.set_x(position[0])
@@ -96,15 +78,49 @@ class ArmMovement:
 
     def get_position(self) -> (int, int, int):
         message = bytearray(self.__GET_ARM_POSITION_COMMAND)
-        message += bytearray(b'\x00\x00')
+        message.append(b'\x00\x00\x00\x00')
 
         self.serial.write(message)
 
-        response = bytearray(self.serial.read(112))
+        return self.__wait_result_response()
 
-        message_x = convert_from_a1_number(response[16:47])
-        message_y = convert_from_a1_number(response[48:79])
-        message_z = convert_from_a1_number(response[80:112])
+    def grab_piece(self):
+        message = bytearray(self.__GRAB_PIECE)
+        message.append(b'\x00\x00\x00\x00')
+
+        self.serial.write(message)
+        self.__wait_status_response()
+
+    def __send_new_position(self, command: __DISPLACEMENT_X_COMMAND | __DISPLACEMENT_Y_COMMAND | __DISPLACEMENT_Z_COMMAND, actual_axis: int, new_axis: int):
+        desired_pos = convert_to_a1_number(actual_axis + new_axis)
+
+        message = bytearray(command)
+        message.append(desired_pos)
+
+        self.serial.write(message)
+        self.__wait_status_response()
+
+    def __wait_status_response(self):
+        response = bytearray(self.serial.read(2))
+
+        result_type = response[0:1]
+        status_code = response[2:3]
+
+        if result_type != b'\x00\x01':
+            raise RuntimeError("Receive unexpected response")
+        elif status_code == b'\x00\x01':
+            raise RuntimeError("The Serial Device raise error during processing the command")
+
+    def __wait_result_response(self) -> (int, int, int):
+        response = bytearray(self.serial.read(14))
+
+        result_type = response[0:1]
+        message_x = convert_from_a1_number(int.to_bytes(response[2:5], 4, "big"))
+        message_y = convert_from_a1_number(int.to_bytes(response[6:9], 4, "big"))
+        message_z = convert_from_a1_number(int.to_bytes(response[10:13], 4, "big"))
+
+        if result_type != b'\x00\x00':
+            raise RuntimeError("Receive unexpected response")
 
         return message_x, message_y, message_z
 
