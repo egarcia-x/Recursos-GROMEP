@@ -44,11 +44,11 @@ def convert_to_a1_number(number: int) -> bytes:
 
 
 class ArmMovement:
-    __DISPLACEMENT_X_COMMAND = b'\x00'
-    __DISPLACEMENT_Y_COMMAND = b'\x01'
-    __DISPLACEMENT_Z_COMMAND = b'\x02'
-    __GET_ARM_POSITION_COMMAND = b'\x03'
-    __GRAB_PIECE = b'\x04'
+    __DISPLACEMENT_X_COMMAND = b'\x00\x00'
+    __DISPLACEMENT_Y_COMMAND = b'\x00\x01'
+    __DISPLACEMENT_Z_COMMAND = b'\x00\x02'
+    __GET_ARM_POSITION_COMMAND = b'\x00\x03'
+    __GRAB_PIECE = b'\x00\x04'
 
     def __init__(self, usb_device: str):
         self.serial = Serial(usb_device, 9600, 8, 2, STOPBITS_ONE)
@@ -91,7 +91,7 @@ class ArmMovement:
         self.serial.write(message)
         self.__wait_status_response()
 
-    def __send_new_position(self, command: __DISPLACEMENT_X_COMMAND | __DISPLACEMENT_Y_COMMAND | __DISPLACEMENT_Z_COMMAND, actual_axis: int, new_axis: int):
+    def __send_new_position(self, command: bytes, actual_axis: int, new_axis: int):
         desired_pos = convert_to_a1_number(actual_axis + new_axis)
 
         message = bytearray(command)
