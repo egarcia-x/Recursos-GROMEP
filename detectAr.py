@@ -118,6 +118,12 @@ while True:
 		tvec = tvec_list_all[pos][0]
 		#print('rvec')
 		#print(rvec)
+		rvec[0]=0
+		rvec[1]=0  #Hemos hecho esta chapuza xq petaba cuando hacia cambios buscrus y/o cuando tenia x valores
+		rvec[2]=0
+		
+
+		# Pienso que sería mejor que quitaramos esta funcion que realmente no nos aporta nada a parte de aesthetic
 		aruco.drawAxis(frame, camera_matrix, camera_distortion, rvec, tvec, 100)
 		
 		
