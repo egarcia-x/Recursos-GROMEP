@@ -25,6 +25,7 @@ colorRed = False
 colorGreen = False
 colorBlue = False
 center = False
+list = []
 ####
 
 
@@ -79,8 +80,7 @@ while True:
 				colorGreen = True
 				
 				for i,x in enumerate(tvec_green):
-					print(i)
-					print(x)
+					list.append(x)
 				
 			elif x == 13:
 				tvec_blue = tvec_list_all[i][0]
