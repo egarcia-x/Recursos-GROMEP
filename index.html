@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Los vectores de los putos arucos!!!!</title>
+</head>
+    <script>
+        function vectores(){
+            fetch('https://192.168.0.105/data.csv').then(response => response.text()).then(text => {
+                var data = text.split("\n");
+                document.getElementById("dataLabel").innerHTML = data[data.length] + "sex";
+                })
+            }
+    </script>
+    <body onload = "vectores()">
+        <div>
+            <h1>Phidget Data</h1>
+            <h2 id="dataLabel">?</h2>
+        </div>
+    </body>
+</html>

@@ -12,8 +12,8 @@ cap = cv2.VideoCapture(0)
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
-firstMarkerID = 2
-secondMarkerID = 7
+firstMarkerID = 7
+secondMarkerID = 32
 
 
 with open('/home/pi/Desktop/Recursos-GROMEP/assets/camera_cal.npy', 'rb') as f:
@@ -38,7 +38,8 @@ def relativePosition(rvec1, tvec1, rvec2, tvec2):
 
     orgRvec, orgTvec = inversePerspective(invRvec, invTvec)
     #print("rvec: ", rvec2, "tvec: ", tvec2, "\n and \n", orgRvec, orgTvec)
-
+    #print(rvec1)
+    #print(invRvec)
     info = cv2.composeRT(rvec1, tvec1, invRvec, invTvec)
     composedRvec, composedTvec = info[0], info[1]
 
@@ -73,7 +74,7 @@ while True:
 
     # lists of ids and the corners beloning to each id
     corners, ids, rejected_img_points = aruco.detectMarkers(gray, aruco_dict, parameters=parameters, cameraMatrix=matrix_coefficients, distCoeff=distortion_coefficients)
-
+    #print(corners)
     if np.all(ids is not None):  # If there are markers found by detector
 
         del markerTvecList[:]
@@ -84,44 +85,43 @@ while True:
         for i in range(0, len(ids)):  # Iterate in markers
             # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
             rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients, distortion_coefficients)
-            if ids[i] == firstMarkerID:
+            (rvec - tvec).any()
+            if ids[i] in range(5, 10):
                 firstRvec = rvec
                 firstTvec = tvec
                 isFirstMarkerCalibrated = True
                 firstMarkerCorners = corners[i]
 
-            elif ids[i] == secondMarkerID:
-                secondRvec = rvec
-                secondTvec = tvec
-                isSecondMarkerCalibrated = True
-                secondMarkerCorners = corners[i]
-
+            else:
+                rvec_all, tvec_all, rejected = aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients, distortion_coefficients)
             # print(markerPoints)
-            (rvec - tvec).any() # get rid of that nasty numpy value array error
-            markerRvecList.append(rvec)
-            markerTvecList.append(tvec)
+                (rvec_all - tvec_all).any() # get rid of that nasty numpy value array error
+                markerRvecList.append(rvec)
+                markerTvecList.append(tvec)
 
             aruco.drawDetectedMarkers(frame, corners)  # Draw A square around the markers
 
         if len(ids) > 1:
+            for p, m in zip(rvec_all[0], tvec_all[0]):
 
-            firstRvec, firstTvec = firstRvec.reshape((3, 1)), firstTvec.reshape((3, 1))
-            #secondRvec, secondTvec = secondRvec.reshape((3, 1)), secondTvec.reshape((3, 1))  ES EN SERIO?!?!??!
 
-            composedRvec, composedTvec = relativePosition(firstRvec, firstTvec, secondRvec, secondTvec)
+                firstRvec, firstTvec = firstRvec.reshape((3, 1)), firstTvec.reshape((3, 1))
+                #secondRvec, secondTvec = secondRvec.reshape((3, 1)), secondTvec.reshape((3, 1))  ES EN SERIO?!?!??!
 
-        if len(ids) > 1 and composedRvec is not None and composedTvec is not None:
+                composedRvec, composedTvec = relativePosition(firstRvec, firstTvec, p, m)
 
-            info = cv2.composeRT(composedRvec, composedTvec, secondRvec.T, secondTvec.T)
-            TcomposedRvec, TcomposedTvec = info[0], info[1]
-            moduleRvec = (math.sqrt(composedRvec[0][0]**2 + composedRvec[1][0]**2 + composedRvec[2][0]**2))*(180/math.pi)
-            #print(composedTvec)
-            moduleTvec = (math.sqrt(composedTvec[0][0]**2 + composedTvec[1][0]**2 + composedTvec[2][0]**2))
-            #print('module_rvec: ', moduleRvec)
-            print('module_tvec:  ',  moduleTvec)
-            objectPositions = np.array([(0, 0, 0)], dtype=np.float)  # 3D point for projection
-            
-            imgpts, jac = cv2.projectPoints(axis, TcomposedRvec, TcomposedTvec, matrix_coefficients, distortion_coefficients)
+                if len(ids) > 1 and composedRvec is not None and composedTvec is not None:
+
+                    info = cv2.composeRT(composedRvec, composedTvec, p.T, m.T)
+                    TcomposedRvec, TcomposedTvec = info[0], info[1]
+                    moduleRvec = (math.sqrt(composedRvec[0][0]**2 + composedRvec[1][0]**2 + composedRvec[2][0]**2))*(180/math.pi)
+                    #print(composedTvec)
+                    moduleTvec = (math.sqrt(composedTvec[0][0]**2 + composedTvec[1][0]**2 + composedTvec[2][0]**2))
+                    #print('module_rvec: ', moduleRvec)
+                    #print('module_tvec:  ',  moduleTvec)
+                    objectPositions = np.array([(0, 0, 0)], dtype=np.float)  # 3D point for projection
+                    
+            #imgpts, jac = cv2.projectPoints(axis, TcomposedRvec, TcomposedTvec, matrix_coefficients, distortion_coefficients)
 
             # frame = draw(frame, corners[0], imgpts)
             aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, TcomposedRvec, TcomposedTvec, 0.01)  # Draw Axis
