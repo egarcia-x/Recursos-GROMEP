@@ -1,7 +1,7 @@
 from multiprocessing import Queue
 
 from cv2 import aruco, VideoCapture, Rodrigues, circle, putText, FONT_HERSHEY_PLAIN, cvtColor, COLOR_BGR2GRAY, imshow, waitKey, destroyAllWindows, LINE_AA, composeRT
-from numpy import matrix, dot, load
+from numpy import matrix, dot, load, linalg
 from math import pi, sqrt
 
 def inversePerspective(rvec, tvec):
@@ -49,6 +49,8 @@ def camera_thread(camera_calc_queue: Queue):
     marker_detected = False
     purple_id = False
 
+    distance_robot = 1000
+
     ROBOT = 1 # 0 es morado y 1 es amarillo
 
     while True:
@@ -76,6 +78,7 @@ def camera_thread(camera_calc_queue: Queue):
                     rvec_p, tvec_p = rvecs, tvecs
 
                     rvec_p, tvec_p = rvec_p.reshape((3,1)), tvec_p.reshape((3,1))
+                    
 
                 elif ids[l] in range(6, 10):
                     yellow_id = True
@@ -86,7 +89,6 @@ def camera_thread(camera_calc_queue: Queue):
                     rvec_y, tvec_y = rvecs, tvecs
 
                     rvec_y, tvec_y = rvec_y.reshape((3,1)), tvec_y.reshape((3,1))
-
 
                 elif 11 < i < 50:
                     marker_detected = True
@@ -102,8 +104,10 @@ def camera_thread(camera_calc_queue: Queue):
                         circle(frame, (cx, cy), 2, (0,255,0), 1)
                         distance_p = cx - cx_purple, cy - cy_purple
                         markersDict["aruco_robot{0}".format(l)] = [{"ID": i, "distance": {"x":distance_p[0], "y":distance_p[1]}, "heading": moduleRvec}]
-                        #print(markersDict)
-                        
+
+                    if yellow_id:
+                        distance_robot = sqrt(((cx_purple - cx_yellow)**2) + ((cy_purple - cy_yellow)**2))
+                        markersDict['robot_distance'] = distance_robot                    
 
                 if yellow_id and marker_detected and ROBOT == 1:
                     if 11 < ids[l] < 50:
@@ -117,9 +121,10 @@ def camera_thread(camera_calc_queue: Queue):
                         circle(frame, (cx, cy), 2, (0,255,0), 1)
                         distance_y = cx - cx_yellow, cy - cy_yellow
                         markersDict["aruco_robot{0}".format(l)] = [{"ID": i, "center": {"x":distance_y[0], "y":distance_y[1]}, "heading": moduleRvec}]
-                        #print(markersDict)
                        
-                
+                    if purple_id:
+                        distance_robot = sqrt(((cx_purple - cx_yellow)**2) + ((cy_purple - cy_yellow)**2))
+                        markersDict['robot_distance'] = distance_robot               
 
                 camera_calc_queue.put(markersDict)
 
