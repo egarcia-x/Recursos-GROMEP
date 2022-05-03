@@ -107,7 +107,8 @@ while True:
 
                 firstRvec, firstTvec = firstRvec.reshape((3, 1)), firstTvec.reshape((3, 1))
                 #secondRvec, secondTvec = secondRvec.reshape((3, 1)), secondTvec.reshape((3, 1))  ES EN SERIO?!?!??!
-
+                print(firstRvec)
+                print(p)
                 composedRvec, composedTvec = relativePosition(firstRvec, firstTvec, p, m)
 
                 if len(ids) > 1 and composedRvec is not None and composedTvec is not None:
@@ -125,8 +126,8 @@ while True:
 
             # frame = draw(frame, corners[0], imgpts)
             aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, TcomposedRvec, TcomposedTvec, 0.01)  # Draw Axis
-            relativePoint = (int(imgpts[0][0][0]), int(imgpts[0][0][1]))
-            cv2.circle(frame, relativePoint, 2, (255, 255, 0))
+            #relativePoint = (int(imgpts[0][0][0]), int(imgpts[0][0][1]))
+            #cv2.circle(frame, relativePoint, 2, (255, 255, 0))
 
 
             cv2.putText(frame, 'distance: ' + str(int(moduleTvec*100)), (40, 400), cv2.FONT_HERSHEY_PLAIN, 2.5, (100,255,0), 2, cv2.LINE_AA)
